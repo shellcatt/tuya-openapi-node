@@ -1,0 +1,24 @@
+{
+  "name": "tuya-openapi-node",
+  "version": "0.1.0",
+  "description": "NodeJS interface for Tuya IoT devices through the Tuya OpenAPI",
+  "main": "index.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "echo 'Not yet implemented' && exit 1"
+  },
+  "keywords": [
+    "tuya",
+    "iot"
+  ],
+  "author": {
+    "name": "shellcatt",
+    "email": "xtylor@yahoo.com"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@tuya/tuya-connector-nodejs": "^2.1.2",
+    "dotenv": "^16.3.1",
+    "moment": "^2.30.1"
+  }
+}
