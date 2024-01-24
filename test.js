@@ -7,7 +7,7 @@ import { promisify } from 'util';
 import { log, error } from 'console';
 import fs from 'fs';
 
-import select from '@inquirer/select';
+import select, { Separator } from '@inquirer/select';
 import 'dotenv/config';
 
 // const env = process.env;
@@ -50,11 +50,11 @@ let sleep = promisify(setTimeout);
         
         const tDevice = await select({
             message: 'Select a device to test',
-            choices: Object.values(tuyaClient.deviceMap).map(d => ({
+            choices: [...Object.values(tuyaClient.deviceMap).map(d => ({
                 name: d.title || `(${d.description})`,
                 value: d,
                 description: JSON.stringify(d)
-            })),
+            })), new Separator()],
         });
 
         log('Is actually online?');
@@ -62,8 +62,7 @@ let sleep = promisify(setTimeout);
         if (!isOnline) {
             error('Device is offline?')
             exit()
-        }
-        await sleep(1000);
+        } 
         
         if (tDevice instanceof TuyaLight) {
             // tuyaClient.sendDeviceCommand(tDevice.id, 'switch_led', true);
@@ -87,17 +86,33 @@ let sleep = promisify(setTimeout);
             await tDevice.setColorRGB({ r: 250, g: 0, b: 0 });
             await sleep(1000);
 
+            log('Check light colors...');
+            log(JSON.stringify( tDevice.data ));
+            await sleep(500);
+            
+            log('Turn off light...');
             await tDevice.turnOff();
         }
         else if (tDevice instanceof TuyaSocket) {
-          // tuyaClient.sendDeviceCommand(tDevice.id, 'switch_1', true);
-          log('Turn on socket...');
-          await tDevice.turnOn();
-          await sleep(500);
+            // tuyaClient.sendDeviceCommand(tDevice.id, 'switch_1', true);
+            log('Turn on socket...');
+            await tDevice.turnOn();
+            await sleep(500);
+
+            log('Wait 25 sec for reporting to register...');
+            await sleep(25000);
+            
+            log('Re-init socket values...');
+            await tDevice.init();
+
+            log('Check socket power consumption...');
+            log(JSON.stringify( tDevice.data.reporting ));
+            await sleep(500);
+
+            log('Turn off socket...');
+            await tDevice.turnOff();
+            await sleep(500);
           
-          log('Turn off socket...');
-          await tDevice.turnOff();
-          await sleep(500);
         }
 
     } catch (e) {
