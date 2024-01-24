@@ -2,7 +2,7 @@ import { TuyaOpenAPIClient } from './lib/TuyaOpenAPIClient.mjs';
 import { TuyaLight } from './lib/devices/TuyaLight.mjs';
 import { TuyaSocket } from './lib/devices/TuyaSocket.mjs';
 
-import process from 'process';
+import { env, cwd, exit } from 'process';
 import { promisify } from 'util';
 import { log, error } from 'console';
 import fs from 'fs';
@@ -10,7 +10,7 @@ import fs from 'fs';
 import select from '@inquirer/select';
 import 'dotenv/config';
 
-const env = process.env;
+// const env = process.env;
 
 let sleep = promisify(setTimeout);
 
@@ -18,7 +18,7 @@ let sleep = promisify(setTimeout);
 
     const tuyaClient = new TuyaOpenAPIClient();
 
-    log(fs.readFileSync(process.cwd() + '/tuya-iot.asc').toString('utf8'));
+    log(fs.readFileSync(cwd() + '/tuya-iot.asc').toString('utf8'));
 
     log("---------------------------");
     await sleep(100);
@@ -36,7 +36,7 @@ let sleep = promisify(setTimeout);
         }
 
         const answer = await select({
-            message: 'View result?',
+            message: 'View device list JSON?',
             choices: [
                 { name: 'yes', value: 'yes', description: 'Print JSON and continue' },
                 { name: 'no', value: 'no', description: 'Continue' }
@@ -57,6 +57,14 @@ let sleep = promisify(setTimeout);
             })),
         });
 
+        log('Is actually online?');
+        let isOnline = await tDevice._actuallyOnline();
+        if (!isOnline) {
+            error('Device is offline?')
+            exit()
+        }
+        await sleep(1000);
+        
         if (tDevice instanceof TuyaLight) {
             // tuyaClient.sendDeviceCommand(tDevice.id, 'switch_led', true);
             log('Turn off light...');
