@@ -1,6 +1,6 @@
 {
   "name": "tuya-openapi-node",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "NodeJS interface for Tuya IoT devices through the Tuya OpenAPI",
   "main": "index.mjs",
   "type": "module",
