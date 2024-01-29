@@ -1,6 +1,7 @@
 import { TuyaOpenAPIClient } from './lib/TuyaOpenAPIClient.mjs';
 import { TuyaLight } from './lib/devices/TuyaLight.mjs';
 import { TuyaSocket } from './lib/devices/TuyaSocket.mjs';
+import TuyaLink from '@tuyapi/link';
 
 import { env, cwd, exit, stdin } from 'process';
 import { promisify } from 'util';
@@ -12,10 +13,27 @@ import 'dotenv/config';
 
 let sleep = promisify(setTimeout);
 
+const TUYALINK_OPTIONS = {
+    email: env.TUYA_USER,
+    password: env.TUYA_PASS,
+    region: env.TUYA_REGION,
+    timezone: env.TUYA_TIMEZONE,
+    apiKey: env.TUYA_API_KEY,
+    apiSecret: env.TUYA_API_SECRET,
+    schema: env.TUYA_APP_SCHEMA
+};
+
 (async () => {
 
     const tuyaClient = new TuyaOpenAPIClient();
+
     let [prompt, answer] = [null, null];
+    // Graceful stop 
+    stdin.on('keypress', (_, key) => {
+        if (['escape', 'q'].includes(key.name)) {
+          prompt.cancel()
+        }
+    });
 
     log(fs.readFileSync(cwd() + '/tuya-iot.asc').toString('utf8'));
 
@@ -26,82 +44,88 @@ let sleep = promisify(setTimeout);
         await tuyaClient.init(
             env.TUYA_API_KEY, 
             env.TUYA_API_SECRET,
-            env.TUYA_API_REGION
+            env.TUYA_REGION
         );
         
-        if (!Object.keys(tuyaClient.deviceMap).length) {
-            error('No devices found.');
-            return;
-        }
-
-        // Graceful stop 
-        stdin.on('keypress', (_, key) => {
-            if (['escape', 'q'].includes(key.name)) {
-              prompt.cancel()
-            }
-        });
-
-        prompt = select({
-            message: 'View device list JSON?',
-            choices: [
-                { name: 'Yes', value: 'yes', description: 'Print JSON and continue' },
-                { name: 'No', value: 'no', description: 'Continue' }
-            ],
-            default: 'no'
-        });
-        answer = await prompt.catch(onExit);
-
-        if (answer == 'yes') {
-            log('Device list');
-            console.dir(tuyaClient.deviceMap, { depth: null });
-        }
-        
-        prompt = select({
-            message: 'Select a device',
-            choices: [...Object.values(tuyaClient.deviceMap).map(d => ({
-                name: d.title || `(${d.description})`,
-                value: d,
-                description: JSON.stringify(d)
-            })), new Separator()],
-        });
-        answer = await prompt.catch(onExit);
-
-        const tDevice = answer;
-        log('Is actually online?');
-        let isOnline = await tDevice._actuallyOnline();
-        if (!isOnline) {
-            error('Device is offline?');
-            exit();
-        }
-        log('... yes');
-
-        prompt = select({
-            message: 'Select device action',
-            choices: [
-                { name: 'Test', value: 'test', description: 'Perform automated device tests' },
-                { name: 'Reset', value: 'reset', description: 'Reset factory settings' }
-            ],
-            default: 'test'
-        });
-        answer = await prompt.catch(onExit);
-        
-        if (answer == 'test') {
-            await deviceTestProcedure(tDevice);
-        } 
-        else if (answer == 'reset') {
+        if (Object.keys(tuyaClient.deviceMap).length) {
+            log('Found ' + Object.keys(tuyaClient.deviceMap).length + ' devices');
+            await sleep(500);
+            
             prompt = select({
-                message: 'ARE YOU SURE YOU WANT TO RESET THIS DEVICE TO FACTORY SETTINGS?',
+                message: 'View device list JSON?',
                 choices: [
-                    { name: 'Yes', value: 'yes', description: 'I said YES' },
-                    { name: 'No', value: 'no', description: 'Hell NO' }
+                    { name: 'Yes', value: 'yes', description: 'Print JSON and continue' },
+                    { name: 'No', value: 'no', description: 'Continue' }
                 ],
                 default: 'no'
             });
             answer = await prompt.catch(onExit);
+    
             if (answer == 'yes') {
-                await deviceResetProcedure(tDevice);
+                log('Device list');
+                console.dir(tuyaClient.deviceMap, { depth: null });
+            }
+        }
+        
+        prompt = select({
+            message: 'Select a device, or ...',
+            choices: [
+                ...Object.values(tuyaClient.deviceMap).map(d => ({
+                    name: d.title || `(${d.description})`,
+                    value: d,
+                    description: JSON.stringify(d)
+                })), 
+                new Separator(),
+                {
+                    name: 'Add new device',
+                    value: 'add',
+                    description: JSON.stringify(TUYALINK_OPTIONS)
+                }
+            ],
+        });
+        answer = await prompt.catch(onExit);
+
+        if (answer === 'add') {
+            await addDeviceProcedure();
+        } 
+        else {
+            const tDevice = answer;
+            log('Is actually online?');
+            let isOnline = await tDevice._actuallyOnline();
+            if (!isOnline) {
+                error('Device is offline?');
+                exit();
+            }
+            log('... yes');
+    
+            prompt = select({
+                message: 'Select device action',
+                choices: [
+                    { name: 'Test', value: 'test', description: 'Perform automated device tests' },
+                    { name: 'Reset', value: 'reset', description: 'Reset factory settings' }
+                ],
+                default: 'test'
+            });
+            answer = await prompt.catch(onExit);
+            
+            if (answer == 'test') {
+                await deviceTestProcedure(tDevice);
             } 
-            exit();
+            else if (answer == 'reset') {
+                prompt = select({
+                    message: 'ARE YOU SURE YOU WANT TO RESET THIS DEVICE TO FACTORY SETTINGS?',
+                    choices: [
+                        { name: 'Yes', value: 'yes', description: 'I said YES' },
+                        { name: 'No', value: 'no', description: 'Hell NO' }
+                    ],
+                    default: 'no'
+                });
+                answer = await prompt.catch(onExit);
+                if (answer == 'yes') {
+                    await deviceResetProcedure(tDevice);
+                } 
+            }
+
         }
         
 
@@ -161,8 +185,9 @@ async function deviceTestProcedure(tDevice) {
         log('Turn off socket...');
         await tDevice.turnOff();
         await sleep(500);
-      
     }
+
+    log('✔ Tests completed')
 }
 
 async function deviceResetProcedure(tDevice) {
@@ -171,7 +196,20 @@ async function deviceResetProcedure(tDevice) {
     } catch (e) {
         error(`Could not reset device ${tDevice.id}`)
     }
-    log(`Device ${tDevice.id} reset successfully!`);
+    log(`✔ Device ${tDevice.id} reset successfully!`);
+}
+
+async function addDeviceProcedure() {
+    const register = new TuyaLink.wizard(TUYALINK_OPTIONS);
+
+    await register.init();
+    log('Logged in successfuly');
+
+    log('Connecting to device.......')
+    let devices = await register.linkDevice({ ssid: env.WIFI_SSID, wifiPassword: env.WIFI_PASS, devices: 1 });
+
+    log('✔ Added device(s)')
+    console.log(devices);
 }
 
 function onExit() {

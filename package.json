@@ -1,6 +1,6 @@
 {
   "name": "tuya-openapi-node",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "NodeJS interface for Tuya IoT devices through the Tuya OpenAPI",
   "main": "index.mjs",
   "type": "module",
@@ -19,6 +19,7 @@
   "dependencies": {
     "@inquirer/select": "^1.3.3",
     "@tuya/tuya-connector-nodejs": "^2.1.2",
+    "@tuyapi/link": "^0.5.0",
     "dotenv": "^16.3.1",
     "moment": "^2.30.1"
   }
