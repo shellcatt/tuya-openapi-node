@@ -18,6 +18,11 @@
 
 </details>
 
+### TODO: 
+- [x] link, rename, test & unlink devices
+- [x] implement interactive test script 
+- [ ] implement pure CLI 
+- [ ] implement classes for other IoT devices (climate, fan, lock, etc.)
 
 ### ☞ [Useful links](./TUYA-LINKS.md) 
 
