@@ -9,6 +9,7 @@ import { log, error } from 'console';
 import fs from 'fs';
 
 import select, { Separator } from '@inquirer/select';
+import input from '@inquirer/input';
 import 'dotenv/config';
 
 let sleep = promisify(setTimeout);
@@ -50,7 +51,7 @@ const TUYALINK_OPTIONS = {
         if (Object.keys(tuyaClient.deviceMap).length) {
             log('Found ' + Object.keys(tuyaClient.deviceMap).length + ' devices');
             await sleep(500);
-            
+
             prompt = select({
                 message: 'View device list JSON?',
                 choices: [
@@ -77,10 +78,11 @@ const TUYALINK_OPTIONS = {
                 })), 
                 new Separator(),
                 {
-                    name: 'Add new device',
+                    name: '+ Add new device',
                     value: 'add',
                     description: JSON.stringify(TUYALINK_OPTIONS)
-                }
+                },
+                new Separator(),
             ],
         });
         answer = await prompt.catch(onExit);
@@ -102,6 +104,7 @@ const TUYALINK_OPTIONS = {
                 message: 'Select device action',
                 choices: [
                     { name: 'Test', value: 'test', description: 'Perform automated device tests' },
+                    { name: 'Rename', value: 'rename', description: 'Give new customName to device' },
                     { name: 'Reset', value: 'reset', description: 'Reset factory settings' }
                 ],
                 default: 'test'
@@ -110,6 +113,10 @@ const TUYALINK_OPTIONS = {
             
             if (answer == 'test') {
                 await deviceTestProcedure(tDevice);
+            } 
+            else if (answer == 'rename') {
+                answer = await input({ message: 'Enter new device name:' });
+                await deviceRenameProcedure(tDevice, answer);
             } 
             else if (answer == 'reset') {
                 prompt = select({
@@ -188,6 +195,16 @@ async function deviceTestProcedure(tDevice) {
     }
 
     log('✔ Tests completed')
+}
+
+async function deviceRenameProcedure(tDevice, name) {
+    try {
+        await tDevice.rename(name);
+    } catch (e) {
+        error(`Could not reset device ${tDevice.id}`)
+    }
+    log(`✔ Device ${tDevice.id} renamed successfully to ${name}!`);
+    log(`❗ Changes will take effect in at ~30 seconds`);
 }
 
 async function deviceResetProcedure(tDevice) {

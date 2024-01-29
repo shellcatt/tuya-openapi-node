@@ -54,7 +54,7 @@
 
 
 #### More
-
+- [How to rename the control button of the device?](https://support.tuya.com/en/help/_detail/K9hutfw3gwoj0)
 - [Home Assistant MQTT Guide for Node-Red](https://community.home-assistant.io/t/controlling-tuya-devices-locally-using-node-red/584224)
 
 
