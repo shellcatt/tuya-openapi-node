@@ -80,7 +80,11 @@ const TUYALINK_OPTIONS = {
                 {
                     name: '+ Add new device',
                     value: 'add',
-                    description: JSON.stringify(TUYALINK_OPTIONS)
+                    description: JSON.stringify({
+                        ...TUYALINK_OPTIONS,
+                        /** Comment this out to display actual credentials */
+                        ...{ email: '****', password: '****' }
+                    })
                 },
                 new Separator(),
             ],
