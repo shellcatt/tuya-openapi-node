@@ -80,11 +80,13 @@ const TUYALINK_OPTIONS = {
                 {
                     name: '+ Add new device',
                     value: 'add',
-                    description: JSON.stringify({
-                        ...TUYALINK_OPTIONS,
-                        /** Comment this out to display actual credentials */
-                        ...{ email: '****', password: '****' }
-                    })
+                    description: JSON.stringify(
+                        maskSensitive(
+                            TUYALINK_OPTIONS, 
+                            ['email', 'password', 'apiKey', 'apiSecret'],
+                            0 // 1
+                        )
+                    )
                 },
                 new Separator(),
             ],
@@ -236,4 +238,13 @@ async function addDeviceProcedure() {
 function onExit() {
     console.log('Bye');
     exit();
+}
+
+function maskSensitive(data, sensKeys, showFirstN = 0) {
+    for (let key in data) {
+        if (sensKeys.includes(key)) {
+            data[key] = data[key].slice(0, showFirstN) + '***';
+        }
+    }
+    return data;
 }
