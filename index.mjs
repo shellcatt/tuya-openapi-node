@@ -1,1 +1,1 @@
-export * from './lib/TuyaOpenAPIClient.mjs';
+export * from './lib/TuyaOpenAPIClient';

@@ -1,12 +1,18 @@
-import { TuyaOpenAPIClient } from './lib/TuyaOpenAPIClient.mjs';
-import { TuyaLight } from './lib/devices/TuyaLight.mjs';
-import { TuyaSocket } from './lib/devices/TuyaSocket.mjs';
+import { 
+    TuyaOpenAPIClient,
+    tuya_asciiArt
+} from './lib/index';
+
+import { 
+	TuyaLight, 
+	TuyaSocket
+} from './lib/devices/index';
+
 import TuyaLink from '@tuyapi/link';
 
-import { env, cwd, exit, stdin } from 'process';
-import { promisify } from 'util';
-import { log, error } from 'console';
-import fs from 'fs';
+import { env, exit, stdin } from 'node:process';
+import { promisify } from 'node:util';
+import { log, error } from 'node:console';
 
 import select, { Separator } from '@inquirer/select';
 import input from '@inquirer/input';
@@ -36,7 +42,7 @@ const TUYALINK_OPTIONS = {
         }
     });
 
-    log(fs.readFileSync(cwd() + '/tuya-iot.asc').toString('utf8'));
+    log(tuya_asciiArt);
 
     log("---------------------------");
     await sleep(100);
